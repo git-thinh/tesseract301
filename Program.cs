@@ -7,6 +7,8 @@ using System.Threading;
 using System.Linq;
 using Newtonsoft.Json;
 using OCR.TesseractWrapper;
+using IPoVn.IPCore;
+using System.Drawing.Imaging;
 
 class Program
 {
@@ -34,7 +36,7 @@ class Program
             //    image.CopyTo(imageColor);
 
             //using (Bitmap bmp = Bitmap.FromFile(@"C:\temp\1.jpg") as Bitmap)
-            using (Bitmap bmp = bitmap)
+            using (Bitmap bmp = bitmap.Clone() as Bitmap)
             {
                 DocumentLayout doc = null;
                 switch (req.command)
@@ -74,6 +76,58 @@ class Program
         return req;
     }
 
+    static oTesseractRequest __ocrExecute2(oTesseractRequest req, Bitmap bitmap)
+    {
+        using (TesseractProcessor processor = new TesseractProcessor())
+        {
+            processor.InitForAnalysePage();
+            using (GreyImage greyImage = GreyImage.FromImage(bitmap))
+            {
+                //greyImage.Save(ImageFormat.Bmp, outFile2);
+
+                ImageThresholder thresholder = new AdaptiveThresholder();
+                using (BinaryImage binImage = thresholder.Threshold(greyImage))
+                {
+                    DocumentLayout doc = null;
+                    switch (req.command)
+                    {
+                        case TESSERACT_COMMAND.GET_TEXT:
+                            //string s = tes.GetText().Trim();
+                            //req.output_text = s;
+                            //req.output_count = s.Length;
+                            req.ok = 1;
+                            break;
+                        default:
+                            unsafe
+                            {
+                                doc = processor.AnalyseLayoutBinaryImage(
+                                    binImage.BinaryData, greyImage.Width, greyImage.Height);
+                            }
+                            if (doc != null)
+                            {
+                                var bs = new List<string>();
+                                if (doc.Blocks.Count > 0)
+                                {
+                                    for (int i = 0; i < doc.Blocks.Count; i++)
+                                        for (int j = 0; j < doc.Blocks[i].Paragraphs.Count; j++)
+                                            bs.AddRange(doc.Blocks[j].Paragraphs[j].Lines
+                                                .Select(x => string.Format(
+                                                    "{0}_{1}_{2}_{3}", x.Left, x.Top, x.Right, x.Bottom)));
+                                }
+                                req.output_format = "left_top_right_bottom";
+                                req.output_text = string.Join("|", bs.ToArray());
+                                req.output_count = bs.Count;
+                                req.ok = 1;
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+
+        return req;
+    }
+
     static void __executeBackground(byte[] buf)
     {
         oTesseractRequest r = null;
@@ -84,7 +138,8 @@ class Program
             string json = redis.HGET("_OCR_REQUEST", guid);
             r = JsonConvert.DeserializeObject<oTesseractRequest>(json);
             Bitmap bitmap = redis.HGET_BITMAP(r.redis_key, r.redis_field);
-            if (bitmap != null) r = __ocrExecute(r, bitmap);
+            if (bitmap != null) 
+                r = __ocrExecute(r, bitmap);
         }
         catch (Exception ex)
         {
