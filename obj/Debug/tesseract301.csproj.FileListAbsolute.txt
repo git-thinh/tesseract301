@@ -12,4 +12,3 @@ D:\tt\build\tesseract301\x86\cvextern.dll
 D:\tt\build\tesseract301\x86\msvcp140.dll
 D:\tt\build\tesseract301\x86\opencv_videoio_ffmpeg411.dll
 D:\tt\build\tesseract301\x86\vcruntime140.dll
-D:\tt\core\tesseract301\obj\Debug\tesseract301.csprojAssemblyReference.cache
