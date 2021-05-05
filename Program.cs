@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using OCR.TesseractWrapper;
 using IPoVn.IPCore;
 using System.Drawing.Imaging;
+using System.IO;
 
 class Program
 {
@@ -21,7 +22,14 @@ class Program
     {
         using (TesseractProcessor processor = new TesseractProcessor())
         {
-            processor.InitForAnalysePage();
+            // call SetVariable() method before passing image(api->SetImage(image))
+            // 0: otsu
+            // 1: isodata local adaptive
+            // 2: sauvola local adaptive => not implement yet
+            //processor.SetVariable("tessedit_thresholding_method", "0");
+            processor.SetVariable("tessedit_thresholding_method", "1");
+
+            //processor.InitForAnalysePage();
             //processor.SetPageSegMode(ePageSegMode.PSM_AUTO_ONLY);
             //var success = processor.Init(req.data_path, req.lang, (int)eOcrEngineMode.OEM_DEFAULT);
 
@@ -35,40 +43,44 @@ class Program
             //else
             //    image.CopyTo(imageColor);
 
-            //using (Bitmap bmp = Bitmap.FromFile(@"C:\temp\1.jpg") as Bitmap)
-            using (Bitmap bmp = bitmap.Clone() as Bitmap)
+            using (var m0 = new MemoryStream())
             {
-                DocumentLayout doc = null;
-                switch (req.command)
+                bitmap.Save(m0, ImageFormat.Jpeg);
+                //using (Bitmap bmp = Bitmap.FromFile(@"C:\temp\1.jpg") as Bitmap)
+                using (Bitmap bmp = new Bitmap(m0))
                 {
-                    case TESSERACT_COMMAND.GET_TEXT:
-                        //string s = tes.GetText().Trim();
-                        //req.output_text = s;
-                        //req.output_count = s.Length;
-                        req.ok = 1;
-                        break;
-                    default:
-                        unsafe
-                        {
-                            doc = processor.AnalyseLayout(bmp);
-                        }
-                        if (doc != null)
-                        {
-                            var bs = new List<string>();
-                            if (doc.Blocks.Count > 0)
-                            {
-                                for (int i = 0; i < doc.Blocks.Count; i++)
-                                    for (int j = 0; j < doc.Blocks[i].Paragraphs.Count; j++)
-                                        bs.AddRange(doc.Blocks[j].Paragraphs[j].Lines
-                                            .Select(x => string.Format(
-                                                "{0}_{1}_{2}_{3}", x.Left, x.Top, x.Right, x.Bottom)));
-                            }
-                            req.output_format = "left_top_right_bottom";
-                            req.output_text = string.Join("|", bs.ToArray());
-                            req.output_count = bs.Count;
+                    DocumentLayout doc = null;
+                    switch (req.command)
+                    {
+                        case TESSERACT_COMMAND.GET_TEXT:
+                            //string s = tes.GetText().Trim();
+                            //req.output_text = s;
+                            //req.output_count = s.Length;
                             req.ok = 1;
-                        }
-                        break;
+                            break;
+                        default:
+                            unsafe
+                            {
+                                doc = processor.AnalyseLayout(bmp);
+                            }
+                            if (doc != null)
+                            {
+                                var bs = new List<string>();
+                                if (doc.Blocks.Count > 0)
+                                {
+                                    for (int i = 0; i < doc.Blocks.Count; i++)
+                                        for (int j = 0; j < doc.Blocks[i].Paragraphs.Count; j++)
+                                            bs.AddRange(doc.Blocks[j].Paragraphs[j].Lines
+                                                .Select(x => string.Format(
+                                                    "{0}_{1}_{2}_{3}", x.Left, x.Top, x.Right, x.Bottom)));
+                                }
+                                req.output_format = "left_top_right_bottom";
+                                req.output_text = string.Join("|", bs.ToArray());
+                                req.output_count = bs.Count;
+                                req.ok = 1;
+                            }
+                            break;
+                    }
                 }
             }
         }
@@ -138,7 +150,7 @@ class Program
             string json = redis.HGET("_OCR_REQUEST", guid);
             r = JsonConvert.DeserializeObject<oTesseractRequest>(json);
             Bitmap bitmap = redis.HGET_BITMAP(r.redis_key, r.redis_field);
-            if (bitmap != null) 
+            if (bitmap != null)
                 r = __ocrExecute(r, bitmap);
         }
         catch (Exception ex)

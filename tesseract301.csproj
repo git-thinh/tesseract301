@@ -91,8 +91,11 @@
     <Compile Include="..\_shared\redisbasic\ResponseException.cs">
       <Link>_shared\RedisBasic\ResponseException.cs</Link>
     </Compile>
-    <Compile Include="..\_shared\_document\oTesseractModel.cs">
-      <Link>_shared\_Document\oTesseractModel.cs</Link>
+    <Compile Include="..\_Shared\_Document\TesseractModel.cs">
+      <Link>_shared\_Document\TesseractModel.cs</Link>
+    </Compile>
+    <Compile Include="..\_Shared\_static_image.cs">
+      <Link>_shared\_static_image.cs</Link>
     </Compile>
     <Compile Include="MyService.cs">
       <SubType>Component</SubType>
