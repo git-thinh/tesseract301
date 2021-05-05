@@ -91,11 +91,17 @@
     <Compile Include="..\_shared\redisbasic\ResponseException.cs">
       <Link>_shared\RedisBasic\ResponseException.cs</Link>
     </Compile>
+    <Compile Include="..\_Shared\_Document\StaticDocument.cs">
+      <Link>_shared\_Document\StaticDocument.cs</Link>
+    </Compile>
     <Compile Include="..\_Shared\_Document\TesseractModel.cs">
       <Link>_shared\_Document\TesseractModel.cs</Link>
     </Compile>
     <Compile Include="..\_Shared\_static_image.cs">
       <Link>_shared\_static_image.cs</Link>
+    </Compile>
+    <Compile Include="..\_Shared\__tuple_this.cs">
+      <Link>_shared\__tuple_this.cs</Link>
     </Compile>
     <Compile Include="MyService.cs">
       <SubType>Component</SubType>
